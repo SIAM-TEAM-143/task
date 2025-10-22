@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIP Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+body{
+  font-family:'Poppins',sans-serif;
+  margin:0;padding:0;
+  background:#0f1724;color:#fff;
+}
+header{
+  background:#162447;
+  padding:15px;text-align:center;
+  font-size:22px;font-weight:bold;
+  color:#f0a500;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  position:relative;
+}
+.logout-btn{
+  position:absolute;right:15px;top:12px;
+  background:#f44336;color:#fff;
+  border:none;padding:6px 10px;
+  border-radius:6px;font-size:13px;
+  cursor:pointer;
+}
+.logout-btn:hover{background:#e53935;}
+.main{padding:80px 20px 120px;}
+.card{
+  background:#1f1f3d;
+  padding:18px;margin:14px 0;
+  border-radius:12px;
+  box-shadow:0 0 10px rgba(0,0,0,0.4);
+}
+.card img, .card video{border-radius:10px;width:100%;max-height:250px;object-fit:cover;}
+.profile{text-align:center;margin-bottom:20px;}
+.profile img{
+  width:90px;height:90px;border-radius:50%;
+  border:3px solid #f0a500;margin-bottom:10px;
+}
+.verified{color:#00ff99;font-weight:600;}
+.unverified{color:#ff4d4d;font-weight:600;}
+.bottom-nav{
+  position:fixed;bottom:0;left:0;width:100%;
+  background:#1f1f3d;display:flex;
+  justify-content:space-around;
+  border-top:2px solid #f0a500;
+  padding:8px 0;z-index:999;
+}
+.bottom-nav a{
+  color:#fff;text-decoration:none;
+  display:flex;flex-direction:column;
+  align-items:center;
+  font-size:12px;
+}
+.bottom-nav a i{
+  font-size:20px;margin-bottom:3px;
+}
+.bottom-nav a.active{color:#f0a500;}
+</style>
+</head>
+<body>
+<header>
+  VIP Dashboard
+  <button class="logout-btn" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+</header>
+
+<div class="main">
+  <div class="profile">
+    <img id="profilePic" src="https://i.ibb.co/7JpLkpK/user.png" alt="Profile">
+    <h2 id="userName">Loading...</h2>
+    <p>UID: <span id="userUID"></span> 
+    <span id="verifiedStatus" class="unverified">Unverified</span></p>
+    <p>Balance: <b>$<span id="balance">0</span></b></p>
+  </div>
+
+  <div class="card">
+    <h3>🎁 Latest Offer</h3>
+    <p id="offerText">Loading...</p>
+  </div>
+
+  <div class="card">
+    <h3>🎬 Promo</h3>
+    <img id="promoImg" style="display:none;">
+    <video id="promoVideo" style="display:none;" controls></video>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="dashboard.html" class="active"><i class="fa-solid fa-house"></i><span>Home</span></a>
+  <a href="task.html"><i class="fa-solid fa-list-check"></i><span>Tasks</span></a>
+  <a href="taskhistory.html"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a>
+  <a href="reffer.html"><i class="fa-solid fa-user-group"></i><span>Refer</span></a>
+  <a href="withdraw.html"><i class="fa-solid fa-money-bill-wave"></i><span>Withdraw</span></a>
+  <a href="account.html"><i class="fa-solid fa-user"></i><span>Account</span></a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
+  authDomain: "eshopingbddd.firebaseapp.com",
+  databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com",
+  projectId: "eshopingbddd",
+  storageBucket: "eshopingbddd.appspot.com",
+  messagingSenderId: "19777305233",
+  appId: "1:19777305233:web:33f3871db06beeaf129d30"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Check login
+const uid = localStorage.getItem('uid');
+if(!uid){
+  alert('Please login first!');
+  window.location='login.html';
+}
+
+// User info realtime
+const userRef = ref(db, `users/${uid}`);
+onValue(userRef, (snapshot)=>{
+  if(snapshot.exists()){
+    const data = snapshot.val();
+    document.getElementById('userName').textContent = `${data.firstName||''} ${data.lastName||''}`;
+    document.getElementById('userUID').textContent = data.uid||uid;
+    document.getElementById('balance').textContent = data.balance||0;
+    document.getElementById('profilePic').src = data.profilePic || "https://i.ibb.co/7JpLkpK/user.png";
+    document.getElementById('verifiedStatus').textContent = data.verified ? '✅ Verified' : '❌ Unverified';
+    document.getElementById('verifiedStatus').className = data.verified ? 'verified' : 'unverified';
+  }else{
+    localStorage.removeItem('uid');
+    window.location='login.html';
+  }
+});
+
+// Load offer & promo
+const offerTextEl = document.getElementById('offerText');
+const promoImg = document.getElementById('promoImg');
+const promoVideo = document.getElementById('promoVideo');
+
+const offerRef = ref(db,'offers');
+onValue(offerRef,(snapshot)=>{
+  if(snapshot.exists()){
+    const data = snapshot.val();
+    offerTextEl.textContent = data.text || '';
+    promoImg.style.display = promoVideo.style.display = 'none';
+    if(data.promo){
+      if(data.promo.endsWith('.mp4') || data.promo.endsWith('.webm')){
+        promoVideo.src = data.promo; promoVideo.style.display='block';
+      }else{
+        promoImg.src = data.promo; promoImg.style.display='block';
+      }
+    }
+  }
+});
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  localStorage.removeItem('uid');
+  alert('Logged out successfully!');
+  window.location='login.html';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIP Registered Users | Admin Panel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body{
+  font-family:'Poppins',sans-serif;
+  background:radial-gradient(circle at top left,#141E30,#243B55);
+  color:#fff;margin:0;padding:0;
+}
+.container{
+  max-width:1100px;margin:40px auto;
+  background:rgba(30,30,60,0.95);
+  border-radius:20px;padding:25px;
+  box-shadow:0 0 25px rgba(255,255,255,0.1);
+}
+h2{text-align:center;color:#ffcc00;margin-bottom:20px;}
+.search-box{text-align:center;margin-bottom:20px;}
+.search-box input{
+  width:60%;padding:10px 15px;border:none;
+  border-radius:10px;background:#2c2c54;
+  color:#fff;font-size:15px;
+}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);}
+th{background:#ffcc00;color:#1a1a2e;}
+tr:hover{background:rgba(255,255,255,0.05);}
+.loading{text-align:center;font-size:18px;color:#ffcc00;margin-top:20px;}
+.profile-img{width:45px;height:45px;border-radius:50%;}
+button{
+  padding:6px 10px;border:none;border-radius:8px;
+  cursor:pointer;font-weight:600;
+}
+.verify-btn{background:#00ff99;color:#1a1a2e;}
+.unverify-btn{background:#ff4d4d;color:#fff;}
+.verified-badge{color:#00ff99;font-size:20px;}
+.unverified-badge{color:#ff4d4d;font-size:20px;}
+</style>
+</head>
+<body>
+<div class="container">
+<h2><i class="fa-solid fa-users"></i> VIP Registered Users</h2>
+
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search by UID, Name or Email...">
+</div>
+
+<div id="loading" class="loading">Loading users...</div>
+
+<table id="userTable" style="display:none;">
+<thead>
+<tr>
+<th>UID</th>
+<th>Profile</th>
+<th>Name</th>
+<th>Email</th>
+<th>Phone</th>
+<th>Balance</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="userList"></tbody>
+</table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
+  authDomain: "eshopingbddd.firebaseapp.com",
+  databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com",
+  projectId: "eshopingbddd",
+  storageBucket: "eshopingbddd.appspot.com",
+  messagingSenderId: "19777305233",
+  appId: "1:19777305233:web:33f3871db06beeaf129d30"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let allUsers = [];
+
+async function loadUsers(){
+  const dbRef = ref(db);
+  const snapshot = await get(child(dbRef, "users"));
+  const userList = document.getElementById('userList');
+  const table = document.getElementById('userTable');
+  const loading = document.getElementById('loading');
+  loading.style.display='none';
+  table.style.display='table';
+
+  allUsers = [];
+  snapshot.forEach(userSnap=>{
+    const u = userSnap.val();
+    allUsers.push(u);
+  });
+
+  showUsers(allUsers);
+}
+
+function showUsers(users){
+  const userList = document.getElementById('userList');
+  userList.innerHTML = '';
+  users.forEach(u=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${u.uid}</td>
+      <td><img src="${u.profilePic}" class="profile-img"></td>
+      <td>${u.firstName} ${u.lastName}</td>
+      <td>${u.email}</td>
+      <td>${u.phone}</td>
+      <td>${u.balance}</td>
+      <td>${u.verified ? '<i class="fa-solid fa-circle-check verified-badge"></i> Verified' : '<i class="fa-solid fa-circle-xmark unverified-badge"></i> Unverified'}</td>
+      <td>
+        <button class="${u.verified ? 'unverify-btn':'verify-btn'}" onclick="toggleVerify('${u.uid}', ${u.verified})">
+          ${u.verified ? 'Unverify':'Verify'}
+        </button>
+      </td>
+    `;
+    userList.appendChild(tr);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input',(e)=>{
+  const term = e.target.value.toLowerCase();
+  const filtered = allUsers.filter(u=>
+    u.uid.toString().includes(term) ||
+    u.email.toLowerCase().includes(term) ||
+    `${u.firstName} ${u.lastName}`.toLowerCase().includes(term)
+  );
+  showUsers(filtered);
+});
+
+window.toggleVerify = async function(uid, currentStatus){
+  const dbRef = ref(db, "users/" + uid);
+  await update(dbRef, { verified: !currentStatus });
+  alert(`User ${!currentStatus ? 'verified':'unverified'} successfully!`);
+  location.reload();
+}
+
+loadUsers();
+</script>
+</body>
+</html>
