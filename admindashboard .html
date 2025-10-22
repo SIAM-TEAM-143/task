@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | VIP Task</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+    body{
+      background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a);
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .login-box,.dashboard{
+      background:rgba(30,41,59,0.95);
+      padding:25px 30px;
+      border-radius:20px;
+      box-shadow:0 0 25px rgba(0,255,255,0.1);
+      width:90%;
+      max-width:450px;
+      text-align:center;
+      backdrop-filter:blur(8px);
+    }
+    .login-box input{
+      width:100%;
+      padding:12px;
+      margin:8px 0;
+      border:none;
+      border-radius:10px;
+      background:#334155;
+      color:#fff;
+      font-size:15px;
+    }
+    .login-box button{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      background:#10b981;
+      border:none;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+      color:#fff;
+      font-size:16px;
+      transition:0.3s;
+    }
+    .login-box button:hover{background:#059669;transform:scale(1.02);}
+    .dashboard h2{margin-bottom:15px;font-size:24px;color:#38bdf8;text-shadow:0 0 8px #38bdf8;}
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:15px;
+      margin-top:15px;
+    }
+    .card{
+      background:#1e293b;
+      padding:18px;
+      border-radius:15px;
+      text-align:center;
+      transition:0.3s;
+      box-shadow:0 0 10px rgba(56,189,248,0.2);
+    }
+    .card:hover{transform:scale(1.05);}
+    .card i{
+      font-size:25px;
+      color:#22d3ee;
+      margin-bottom:8px;
+    }
+    .card h3{font-size:15px;color:#cbd5e1;margin-bottom:6px;}
+    .card p{font-size:20px;font-weight:700;color:#22d3ee;}
+    .menu{
+      margin-top:25px;
+      display:grid;
+      gap:10px;
+    }
+    .menu a{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#10b981;
+      color:#fff;
+      padding:12px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:600;
+      font-size:15px;
+      transition:0.3s;
+      box-shadow:0 0 8px rgba(16,185,129,0.3);
+    }
+    .menu a i{margin-right:8px;font-size:18px;}
+    .menu a:hover{background:#059669;transform:scale(1.03);}
+    .logout-btn{background:#ef4444 !important;}
+    .logout-btn:hover{background:#dc2626 !important;}
+  </style>
+</head>
+<body>
+
+  <div class="login-box" id="loginBox">
+    <h2>Admin Login</h2>
+    <input type="email" id="adminEmail" placeholder="Email">
+    <input type="password" id="adminPass" placeholder="Password">
+    <button onclick="adminLogin()">Login</button>
+  </div>
+
+  <div class="dashboard" id="dashboard" style="display:none;">
+    <h2><i class="fa-solid fa-user-shield"></i> Admin Dashboard</h2>
+
+    <div class="stats">
+      <div class="card">
+        <i class="fa-solid fa-users"></i>
+        <h3>Total Users</h3>
+        <p id="totalUsers">0</p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-user-check"></i>
+        <h3>Verified Users</h3>
+        <p id="verifiedUsers">0</p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-user-clock"></i>
+        <h3>Verify Requests</h3>
+        <p id="verifyRequests">0</p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-sack-dollar"></i>
+        <h3>Total Withdraw</h3>
+        <p id="withdrawAmount">৳0</p>
+      </div>
+    </div>
+
+    <div class="menu">
+      <a href="withdrawrequest.html"><i class="fa-solid fa-money-bill-transfer"></i> Withdraw Requests</a>
+      <a href="withdrawdetailsset.html"><i class="fa-solid fa-clipboard-list"></i> Withdraw Details Set</a>
+      <a href="verifieduser.html"><i class="fa-solid fa-user-check"></i> Verified Users</a>
+      <a href="unverified.html"><i class="fa-solid fa-user-xmark"></i> Unverified Users</a>
+      <a href="verifiedrequest.html"><i class="fa-solid fa-user-clock"></i> Verify Requests</a>
+      <a href="#" class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase setup
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
+      authDomain: "eshopingbddd.firebaseapp.com",
+      databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com",
+      projectId: "eshopingbddd",
+      storageBucket: "eshopingbddd.appspot.com",
+      messagingSenderId: "770272986116",
+      appId: "1:770272986116:web:cf8b246c5b1f002bd8a1aa"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function adminLogin(){
+      const email=document.getElementById("adminEmail").value.trim();
+      const pass=document.getElementById("adminPass").value.trim();
+      if(email==="siam@gmail.com" && pass==="siam321"){
+        localStorage.setItem("admin","loggedin");
+        document.getElementById("loginBox").style.display="none";
+        document.getElementById("dashboard").style.display="block";
+        loadStats();
+      }else{
+        alert("Invalid credentials!");
+      }
+    }
+
+    async function loadStats(){
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, "users"));
+      if(snapshot.exists()){
+        let users = snapshot.val();
+        let total = Object.keys(users).length;
+        let verified = 0;
+        let requests = 0;
+        let totalWithdraw = 0;
+        for(let id in users){
+          if(users[id].verified === true) verified++;
+          if(users[id].verifyRequest === true) requests++;
+          if(users[id].withdrawAmount) totalWithdraw += parseFloat(users[id].withdrawAmount);
+        }
+        document.getElementById("totalUsers").innerText = total;
+        document.getElementById("verifiedUsers").innerText = verified;
+        document.getElementById("verifyRequests").innerText = requests;
+        document.getElementById("withdrawAmount").innerText = "৳" + totalWithdraw;
+      }
+    }
+
+    function logout(){
+      localStorage.removeItem("admin");
+      location.reload();
+    }
+
+    window.onload=()=>{
+      if(localStorage.getItem("admin")==="loggedin"){
+        document.getElementById("loginBox").style.display="none";
+        document.getElementById("dashboard").style.display="block";
+        loadStats();
+      }
+    }
+  </script>
+</body>
+</html>

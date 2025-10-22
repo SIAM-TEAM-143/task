@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body{font-family:'Poppins',sans-serif;background:#0f1724;color:#fff;margin:0;padding-bottom:70px;}
+header{background:#162447;color:#f59e0b;text-align:center;padding:15px;font-size:20px;position:relative;}
+header .back{position:absolute;left:15px;top:15px;font-size:22px;color:#f59e0b;cursor:pointer;}
+.container{max-width:800px;margin:20px auto;padding:0 16px;}
+.card{background:#111827;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+.input,textarea{width:100%;padding:10px;border-radius:8px;border:none;background:#071226;color:#fff;margin:8px 0;}
+.btn{background:#f59e0b;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600;}
+.btn:hover{background:#fbbf24;}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;background:#111827;display:flex;justify-content:space-around;border-top:1px solid rgba(255,255,255,0.1);padding:8px 0;}
+.bottom-nav a{color:#ccc;text-decoration:none;font-size:13px;text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;transition:0.3s;}
+.bottom-nav a i{font-size:20px;margin-bottom:3px;}
+.bottom-nav a.active,.bottom-nav a:hover{color:#f59e0b;}
+</style>
+</head>
+<body>
+
+<header>
+  <i class="fas fa-arrow-left back" id="backBtn"></i>
+  Settings
+</header>
+
+<div class="container">
+  <div class="card">
+    <h4>Update Profile Picture</h4>
+    <input type="text" id="newPic" class="input" placeholder="New Profile URL">
+    <button class="btn" id="updatePic">Update Picture</button>
+  </div>
+
+  <div class="card">
+    <h4>Update Bio</h4>
+    <textarea id="bio" class="input" placeholder="Your bio..."></textarea>
+    <button class="btn" id="saveBio">Save Bio</button>
+    <p id="bioMsg"></p>
+  </div>
+
+  <div class="card">
+    <h4>Change Password</h4>
+    <input id="oldPass" class="input" placeholder="Old Password" type="password" />
+    <input id="newPass" class="input" placeholder="New Password (8+)" type="password" />
+    <button class="btn" id="chgPassBtn">Change Password</button>
+    <p id="chgMsg"></p>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+const firebaseConfig = { 
+  apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658", 
+  authDomain: "eshopingbddd.firebaseapp.com", 
+  databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com", 
+  projectId: "eshopingbddd", 
+  storageBucket: "eshopingbddd.firebasestorage.app", 
+  messagingSenderId: "19777305233", 
+  appId: "1:19777305233:web:33f3871db06beeaf129d30" 
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const uid = localStorage.getItem('uid');
+if(!uid){window.location='login.html';}
+
+const userRef = ref(db,'users/'+uid);
+
+// Back button
+document.getElementById('backBtn').addEventListener('click',()=>{
+  window.location.href='account.html';
+});
+
+// Load current bio
+const snap = await get(userRef);
+if(snap.exists()){
+  const d = snap.val();
+  document.getElementById('bio').value = d.bio || '';
+}
+
+// Update profile pic
+document.getElementById('updatePic').addEventListener('click', async ()=>{
+  const url = document.getElementById('newPic').value.trim();
+  if(!url){alert('Enter valid URL'); return;}
+  await update(userRef,{profilePic:url});
+  alert('✅ Profile picture updated!');
+});
+
+// Update bio
+document.getElementById('saveBio').addEventListener('click', async ()=>{
+  const b = document.getElementById('bio').value.trim();
+  await update(userRef,{bio:b});
+  document.getElementById('bioMsg').textContent='✅ Bio updated successfully';
+});
+
+// Change password
+document.getElementById('chgPassBtn').addEventListener('click', async ()=>{
+  const oldP=document.getElementById('oldPass').value;
+  const newP=document.getElementById('newPass').value;
+  const s=await get(userRef);
+  if(!s.exists()) return;
+  if(s.val().password!==oldP){document.getElementById('chgMsg').textContent='❌ Old password mismatch';return;}
+  if(newP.length<8){document.getElementById('chgMsg').textContent='❌ Password too short';return;}
+  await update(userRef,{password:newP});
+  document.getElementById('chgMsg').textContent='✅ Password changed successfully';
+});
+</script>
+</body>
+</html>

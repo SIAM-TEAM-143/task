@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIP Account</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body{margin:0;font-family:'Poppins',sans-serif;background:#07102a;color:#fff;padding-bottom:70px;}
+header{background:#162447;color:#f0a500;padding:15px;text-align:center;font-size:22px;position:relative;}
+header .profile-icon{position:absolute;right:15px;top:15px;font-size:28px;cursor:pointer;color:#f59e0b;}
+.container{max-width:800px;margin:20px auto;padding:0 16px;}
+.card{background:#0f1724;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+.status{padding:6px 10px;border-radius:6px;display:inline-block;margin-top:5px;}
+.verified{background:#22c55e;color:#fff;}
+.unverified{background:#ef4444;color:#fff;}
+.pending{background:#f59e0b;color:#fff;}
+.verify-btn{background:#f59e0b;color:#000;padding:10px 16px;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-top:10px;}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;background:#111827;display:flex;justify-content:space-around;border-top:1px solid rgba(255,255,255,0.1);padding:8px 0;z-index:1000;}
+.bottom-nav a{color:#ccc;text-decoration:none;font-size:13px;text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;transition:0.3s;}
+.bottom-nav a i{font-size:20px;margin-bottom:3px;}
+.bottom-nav a.active,.bottom-nav a:hover{color:#f59e0b;}
+</style>
+</head>
+<body>
+
+<header>
+  VIP Account
+  <i class="fas fa-cog profile-icon" id="openSettings"></i>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h4>Profile Info</h4>
+    <img id="pp" src="https://i.ibb.co/s1K9B7T/default.png" style="width:80px;height:80px;border-radius:50%;margin-bottom:8px;">
+    <p><b>UID:</b> <span id="uid">Loading...</span></p>
+    <p><b>Email:</b> <span id="email">Loading...</span></p>
+    <p><b>Status:</b> <span id="status" class="status unverified">Unverified</span></p>
+    <p><b>Bio:</b> <span id="bioDisplay">Loading...</span></p>
+    <p><b>Password:</b> ********</p>
+    <button id="verifyBtn" class="verify-btn"><i class="fa-solid fa-shield-halved"></i> Verify Now</button>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="dashboard.html"><i class="fa-solid fa-house"></i>Home</a>
+  <a href="task.html"><i class="fa-solid fa-list-check"></i>Tasks</a>
+  <a href="taskhistory.html"><i class="fa-solid fa-clock-rotate-left"></i>History</a>
+  <a href="reffer.html"><i class="fa-solid fa-user-friends"></i>Refer</a>
+  <a href="account.html" class="active"><i class="fa-solid fa-user"></i>Account</a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+const firebaseConfig = { 
+  apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658", 
+  authDomain: "eshopingbddd.firebaseapp.com", 
+  databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com", 
+  projectId: "eshopingbddd", 
+  storageBucket: "eshopingbddd.firebasestorage.app", 
+  messagingSenderId: "19777305233", 
+  appId: "1:19777305233:web:33f3871db06beeaf129d30" 
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const uid = localStorage.getItem('uid');
+if(!uid){window.location='login.html';}
+
+const userRef = ref(db,'users/'+uid);
+
+async function loadUser(){
+  const snap = await get(userRef);
+  if(snap.exists()){
+    const d = snap.val();
+    document.getElementById('uid').textContent = uid;
+    document.getElementById('email').textContent = d.email || '';
+    document.getElementById('pp').src = d.profilePic || 'https://i.ibb.co/s1K9B7T/default.png';
+    document.getElementById('bioDisplay').textContent = d.bio || '';
+    
+    const statusEl = document.getElementById('status');
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    if(d.status === 'verified'){
+      statusEl.textContent = 'Verified';
+      statusEl.className = 'status verified';
+      verifyBtn.style.display = 'none';
+    } 
+    else if(d.status === 'pending'){
+      statusEl.textContent = 'Pending';
+      statusEl.className = 'status pending';
+      verifyBtn.textContent = 'Verification Pending...';
+      verifyBtn.disabled = true;
+    }
+    else {
+      statusEl.textContent = 'Unverified';
+      statusEl.className = 'status unverified';
+    }
+  }
+}
+loadUser();
+
+// Verify button
+document.getElementById('verifyBtn').addEventListener('click', ()=>{
+  update(userRef, { status:'pending' });
+  window.location = 'verified.html';
+});
+
+document.getElementById('openSettings').addEventListener('click',()=>{
+  window.location.href = 'setting.html';
+});
+</script>
+</body>
+</html>

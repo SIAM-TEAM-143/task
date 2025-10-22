@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Profile Verified</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+body{
+  font-family:'Poppins',sans-serif;
+  background:linear-gradient(135deg,#0a1128,#001f54);
+  color:#fff;
+  text-align:center;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  padding:20px;
+}
+
+.card{
+  background:#0f1a3a;
+  padding:30px;
+  border-radius:15px;
+  box-shadow:0 0 15px rgba(0,0,0,0.4);
+  max-width:400px;
+  width:100%;
+}
+
+h2{color:#4ade80;font-size:26px;margin-bottom:10px;}
+p{color:#d1d5db;}
+
+.status{
+  margin-top:15px;
+  padding:10px 20px;
+  border-radius:30px;
+  display:inline-block;
+  font-weight:600;
+}
+
+.status-verified{
+  background:linear-gradient(90deg,#00ff88,#00c3ff);
+  color:#000;
+  box-shadow:0 0 10px rgba(0,255,136,0.6);
+  animation:glow 1.5s infinite alternate;
+}
+
+@keyframes glow{
+  from{box-shadow:0 0 10px rgba(0,255,136,0.4);}
+  to{box-shadow:0 0 20px rgba(0,255,136,0.9);}
+}
+
+a{
+  display:inline-block;
+  margin-top:20px;
+  background:#2563eb;
+  color:#fff;
+  padding:10px 25px;
+  border-radius:25px;
+  text-decoration:none;
+  transition:0.3s;
+}
+a:hover{background:#1d4ed8;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2 id="username">লোড হচ্ছে...</h2>
+  <p id="bio">আপনার তথ্য লোড হচ্ছে...</p>
+  <div id="statusBox"></div>
+  <a href="dashboard.html">ড্যাশবোর্ডে ফিরে যান</a>
+</div>
+
+<script type="module">
+// Firebase Import
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
+  authDomain: "eshopingbddd.firebaseapp.com",
+  databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com",
+  projectId: "eshopingbddd",
+  storageBucket: "eshopingbddd.firebasestorage.app",
+  messagingSenderId: "19777305233",
+  appId: "1:19777305233:web:33f3871db06beeaf129d30"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Current user
+const uid = localStorage.getItem('uid');
+const userRef = ref(db, 'users/' + uid);
+
+get(userRef).then(snap=>{
+  if(!snap.exists()){
+    document.getElementById('username').innerText = "User not found!";
+    return;
+  }
+
+  const data = snap.val();
+  document.getElementById('username').innerText = data.name || 'No Name';
+  document.getElementById('bio').innerText = data.bio || 'কোনো বায়ো দেওয়া হয়নি';
+
+  const statusBox = document.getElementById('statusBox');
+
+  // Admin ID check
+  if(uid === "r4EiKZl9vJeeLfIuxEDsvBfvLDj2" || data.verified === true){
+    statusBox.innerHTML = `<div class="status status-verified">✅ Verified Account</div>`;
+  } else {
+    statusBox.innerHTML = `<div class="status" style="background:#ef4444;">⛔ Unverified Account</div>`;
+  }
+});
+</script>
+
+</body>
+</html>
