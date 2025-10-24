@@ -7,35 +7,51 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-:root{--bg:#0f1724;--card:#111827;--accent:#f59e0b;--muted:#9ca3af;}
-body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#0a1122,#0f1724);color:#fff;margin:0;padding-bottom:70px;}
-.header{padding:14px 18px;background:#162447;text-align:center;}
-.header h1{margin:0;color:var(--accent);font-size:20px}
-.container{max-width:900px;margin:20px auto;padding:10px}
-.card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.5);margin-bottom:14px}
-.task{border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 0;display:flex;gap:10px}
-.task img{width:80px;height:80px;border-radius:10px;object-fit:cover}
+:root{
+  --bg:#070b1f;--card:#0f172a;--accent:#fbbf24;--muted:#9ca3af;--vip:#ffe082;
+}
+body{
+  font-family:'Poppins',sans-serif;
+  background:radial-gradient(circle at top,#0b1228,#060a16);
+  color:#fff;margin:0;padding-bottom:70px;
+}
+.header{
+  background:linear-gradient(90deg,#0f172a,#162447);
+  text-align:center;padding:18px 0;box-shadow:0 3px 15px rgba(0,0,0,0.4);
+}
+.header h1{margin:0;color:var(--vip);font-size:22px;letter-spacing:1px;text-shadow:0 0 10px #fbbf24;}
+.container{max-width:900px;margin:20px auto;padding:10px;}
+.card{background:var(--card);padding:18px;border-radius:14px;box-shadow:0 6px 25px rgba(0,0,0,0.5);margin-bottom:18px;}
+.task{border-bottom:1px solid rgba(255,255,255,0.07);padding:12px 0;display:flex;gap:10px;align-items:center;}
+.task img{width:80px;height:80px;border-radius:12px;object-fit:cover;box-shadow:0 0 10px rgba(0,0,0,0.5);}
 .task-info{flex:1}
-.btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer}
-.file-upload{border:2px dashed rgba(255,255,255,0.2);padding:15px;text-align:center;border-radius:10px;margin:6px 0;}
-.file-upload:hover{border-color:var(--accent)}
-.bottom-nav{position:fixed;bottom:0;left:0;width:100%;background:#111827;display:flex;justify-content:space-around;padding:8px 0;}
+.task-info b{color:var(--vip);font-size:16px;}
+.task-info small{color:var(--muted);}
+.btn{
+  background:var(--accent);color:#000;border:none;
+  border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer;
+  transition:0.3s;box-shadow:0 4px 12px rgba(251,191,36,0.4);
+}
+.btn:hover{transform:scale(1.05);}
+.file-upload{width:100%;padding:8px;border-radius:8px;margin:8px 0;border:none;}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;background:#0f172a;display:flex;justify-content:space-around;padding:10px 0;box-shadow:0 -3px 10px rgba(0,0,0,0.4);}
 .bottom-nav a{color:#ccc;text-decoration:none;font-size:13px;text-align:center;flex:1;}
 .bottom-nav a.active{color:var(--accent);}
+.stats{font-size:13px;color:#9ca3af;margin-top:4px;}
 </style>
 </head>
 <body>
-<div class="header"><h1>VIP Task Center</h1></div>
+<div class="header"><h1>⭐ VIP Task Center ⭐</h1></div>
 <div class="container">
   <div class="card">
-    <h3>Available Tasks</h3>
+    <h3 style="color:var(--vip)">Available Tasks</h3>
     <div id="taskList">Loading...</div>
   </div>
 
   <div class="card" id="proofBox" style="display:none">
-    <h3>Submit Proof</h3>
-    <input type="file" id="proof1" accept="image/*,video/*" class="file-upload">
-    <input type="file" id="proof2" accept="image/*,video/*" class="file-upload">
+    <h3>Submit Proof (Links)</h3>
+    <input type="url" id="proof1" placeholder="Proof 1 Image/Video Link" class="file-upload">
+    <input type="url" id="proof2" placeholder="Proof 2 Image/Video Link" class="file-upload">
     <button class="btn" id="submitProof">Submit Proof</button>
     <p id="msg"></p>
   </div>
@@ -50,8 +66,7 @@ body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#0a1122,
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-storage.js";
+import { getDatabase, ref, onValue, push, set, get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
@@ -65,7 +80,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const storage = getStorage(app);
 
 const uid = localStorage.getItem('uid');
 const taskList = document.getElementById('taskList');
@@ -73,13 +87,32 @@ const proofBox = document.getElementById('proofBox');
 const msg = document.getElementById('msg');
 let currentTask = null;
 
-// Load tasks
-onValue(ref(db, 'tasks'), snap => {
+// Load tasks with stats
+onValue(ref(db, 'tasks'), async snap => {
   const data = snap.val();
   taskList.innerHTML = '';
   if (!data) { taskList.innerHTML = '<p>No tasks available.</p>'; return; }
-  Object.keys(data).reverse().forEach(id => {
+
+  const subsSnap = await get(ref(db, 'submissions'));
+  const subs = subsSnap.exists() ? subsSnap.val() : {};
+
+  for (const id of Object.keys(data).reverse()) {
     const t = data[id];
+    const doneBy = Object.values(subs).filter(s => s.taskId === id && s.status !== 'rejected');
+    const mySubs = doneBy.filter(s => s.uid === uid);
+    const completedCount = doneBy.length;
+    const userCount = mySubs.length;
+    const limit = t.limit || 1;
+
+    // Remove task automatically when total limit reached
+    if (completedCount >= t.totalLimit) {
+      await remove(ref(db, 'tasks/' + id));
+      continue;
+    }
+
+    // Skip if user finished personal limit
+    if (userCount >= limit) continue;
+
     const div = document.createElement('div');
     div.className = 'task';
     div.innerHTML = `
@@ -87,15 +120,23 @@ onValue(ref(db, 'tasks'), snap => {
       <div class="task-info">
         <b>${t.title}</b>
         <p style="color:#9ca3af">${t.desc}</p>
-        <small>Reward: ${t.reward} coins</small><br>
-        <button class="btn" onclick="startTask('${id}')">Start Task</button>
+        <div class="stats">
+          👥 Completed: <span style="color:var(--accent)">${completedCount}</span> / ${t.totalLimit}<br>
+          🔁 You done: ${userCount}/${limit} times
+        </div>
+        <small>💰 Reward: ${t.reward} coins</small><br>
+        <button class="btn" onclick="startTask('${id}', ${userCount}, ${limit})">Start Task</button>
       </div>
     `;
     taskList.appendChild(div);
-  });
+  }
 });
 
-window.startTask = (id) => {
+window.startTask = (id, userCount, limit) => {
+  if (userCount >= limit) {
+    alert(`❌ You already completed this task ${limit} times.`);
+    return;
+  }
   currentTask = id;
   proofBox.style.display = 'block';
   msg.textContent = '';
@@ -106,23 +147,14 @@ document.getElementById('submitProof').addEventListener('click', async () => {
   if (!uid) return alert('Please login first!');
   if (!currentTask) return alert('Select a task first!');
 
-  const file1 = document.getElementById('proof1').files[0];
-  const file2 = document.getElementById('proof2').files[0];
-  if (!file1 || !file2) { msg.textContent = '❌ Please upload both proofs.'; return; }
+  const proof1 = document.getElementById('proof1').value.trim();
+  const proof2 = document.getElementById('proof2').value.trim();
+  if (!proof1 || !proof2) { msg.textContent = '❌ Please provide both proof links.'; return; }
 
-  msg.textContent = 'Uploading... Please wait.';
-
-  const upload = async (file) => {
-    const fileRef = sRef(storage, `proofs/${uid}_${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    return await getDownloadURL(fileRef);
-  };
-
-  const url1 = await upload(file1);
-  const url2 = await upload(file2);
+  msg.textContent = 'Submitting... Please wait.';
 
   const subRef = push(ref(db, 'submissions'));
-  await set(subRef, { uid, taskId: currentTask, proof1: url1, proof2: url2, status: 'pending', time: Date.now() });
+  await set(subRef, { uid, taskId: currentTask, proof1, proof2, status: 'pending', time: Date.now() });
 
   msg.textContent = '✅ Proof submitted successfully! Waiting for approval.';
   proofBox.style.display = 'none';

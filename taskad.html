@@ -12,13 +12,10 @@ header{background:#162447;padding:15px;text-align:center;font-size:22px;color:#f
 .container{max-width:800px;margin:20px auto;padding:20px;background:#1f1f3d;border-radius:15px;box-shadow:0 0 20px rgba(0,0,0,0.5);}
 h2{color:#f0a500;text-align:center;margin-bottom:20px;}
 input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:none;background:#0b1220;color:#fff;}
-.file-upload{border:2px dashed rgba(255,255,255,0.2);padding:20px;text-align:center;border-radius:10px;cursor:pointer;margin:10px 0;}
-.file-upload:hover{border-color:#f59e0b;}
 .btn{background:#f59e0b;color:#000;border:none;padding:10px 15px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:10px;}
 .task-list{margin-top:20px;}
 .task-card{display:flex;align-items:center;gap:15px;background:#111827;padding:12px 15px;margin-bottom:10px;border-radius:10px;transition:0.3s;}
 .task-card:hover{transform:scale(1.02);box-shadow:0 0 15px rgba(245,158,11,0.5);}
-.task-card img{width:70px;height:70px;border-radius:10px;object-fit:cover;}
 .task-info{flex:1;}
 .task-info h3{margin:0 0 6px 0;font-size:17px;color:#f0a500;}
 .task-info p{margin:0 0 4px 0;font-size:14px;color:#ccc;}
@@ -36,7 +33,6 @@ input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:non
   <input type="text" id="link" placeholder="Task Link (optional)">
   <input type="number" id="maxUsers" placeholder="Max Users (0 for unlimited)">
   <input type="number" id="maxAttempts" placeholder="Max Attempts per User (0 for unlimited)">
-  <input type="file" id="file" accept="image/*,video/*" class="file-upload">
   <button class="btn" id="addTask">Add Task</button>
   <div class="task-list" id="taskList">Loading tasks...</div>
 </div>
@@ -44,7 +40,6 @@ input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:non
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
@@ -58,7 +53,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const storage = getStorage(app);
 
 const title = document.getElementById('title');
 const desc = document.getElementById('desc');
@@ -66,7 +60,6 @@ const reward = document.getElementById('reward');
 const link = document.getElementById('link');
 const maxUsers = document.getElementById('maxUsers');
 const maxAttempts = document.getElementById('maxAttempts');
-const file = document.getElementById('file');
 const list = document.getElementById('taskList');
 
 // Load tasks
@@ -79,12 +72,12 @@ onValue(ref(db, 'tasks'), (snap) => {
     const div = document.createElement('div');
     div.className = 'task-card';
     div.innerHTML = `
-      <img src="${t.fileUrl}" alt="task">
       <div class="task-info">
         <h3>${t.title}</h3>
         <p>${t.desc}</p>
         <small>${t.reward} coins</small><br>
-        <small>Users: ${t.maxUsers || '∞'} | Per User: ${t.maxAttempts || '∞'}</small>
+        <small>Users: ${t.maxUsers || '∞'} | Per User: ${t.maxAttempts || '∞'}</small><br>
+        ${t.link ? `<a href="${t.link}" target="_blank" style="color:#38bdf8;">Visit Task Link</a>` : ''}
       </div>
       <button class="delete-btn" onclick="deleteTask('${id}')">Delete</button>
     `;
@@ -100,31 +93,29 @@ window.deleteTask = async (id) => {
 };
 
 document.getElementById('addTask').addEventListener('click', async () => {
-  if (!title.value || !reward.value || !file.files[0]) {
-    alert('Please fill all fields and select a file!');
-    return;
+  try {
+    if (!title.value || !reward.value) {
+      alert('Please fill title and reward!');
+      return;
+    }
+
+    const newTaskRef = push(ref(db, 'tasks'));
+    await set(newTaskRef, {
+      id: newTaskRef.key,
+      title: title.value.trim(),
+      desc: desc.value.trim(),
+      reward: parseInt(reward.value),
+      link: link.value.trim(),
+      maxUsers: parseInt(maxUsers.value) || 0,
+      maxAttempts: parseInt(maxAttempts.value) || 0,
+      time: Date.now()
+    });
+
+    alert('✅ Task added successfully!');
+    title.value = desc.value = reward.value = link.value = maxUsers.value = maxAttempts.value = '';
+  } catch (err) {
+    alert('❌ Error: ' + err.message);
   }
-
-  const fileRef = sRef(storage, `tasks/${Date.now()}_${file.files[0].name}`);
-  await uploadBytes(fileRef, file.files[0]);
-  const fileUrl = await getDownloadURL(fileRef);
-
-  const newTaskRef = push(ref(db, 'tasks'));
-  await set(newTaskRef, {
-    id: newTaskRef.key,
-    title: title.value.trim(),
-    desc: desc.value.trim(),
-    reward: parseInt(reward.value),
-    link: link.value.trim(),
-    maxUsers: parseInt(maxUsers.value) || 0,
-    maxAttempts: parseInt(maxAttempts.value) || 0,
-    fileUrl,
-    time: Date.now()
-  });
-
-  alert('✅ Task added successfully!');
-  title.value = desc.value = reward.value = link.value = maxUsers.value = maxAttempts.value = '';
-  file.value = '';
 });
 </script>
 </body>
