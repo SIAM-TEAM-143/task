@@ -140,7 +140,7 @@ button:hover {
 <!-- VIP Welcome -->
 <div id="welcomeBox">
   <div>
-    <h1> Welcome to VIP Club!</h1>
+    <h1>Welcome to VIP Club!</h1>
     <p>Your account has been successfully created.</p>
     <p>Redirecting to login...</p>
   </div>
@@ -166,6 +166,10 @@ const form = document.getElementById("registerForm");
 const msg = document.getElementById("msg");
 const loader = document.getElementById("loader");
 const welcomeBox = document.getElementById("welcomeBox");
+
+// Capture ref UID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const refUid = urlParams.get('ref'); // referrer UID
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -216,11 +220,12 @@ form.addEventListener("submit", async (e) => {
 
   if (exists) {
     loader.style.display = "none";
-    msg.textContent = " Email already registered!";
+    msg.textContent = "Email already registered!";
     msg.className = "error";
     return;
   }
 
+  // Save new user
   set(ref(db, "users/" + uid), {
     uid,
     firstName,
@@ -232,7 +237,17 @@ form.addEventListener("submit", async (e) => {
     verified: false,
     balance: 0
   })
-  .then(() => {
+  .then(async () => {
+    // Save referral if present
+    if (refUid) {
+      const bonus = 10; // Referral bonus
+      await set(ref(db, "referrals/" + uid), {
+        refBy: refUid,
+        refUser: uid,
+        bonus
+      });
+    }
+
     loader.style.display = "none";
     welcomeBox.style.display = "flex";
     setTimeout(() => {
