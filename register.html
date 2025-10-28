@@ -127,6 +127,7 @@ button:hover {
   <input type="text" id="phone" placeholder="Phone (11 digit)" required>
   <input type="password" id="password" placeholder="Password (8+ digit)" required>
   <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+  <input type="text" id="referral" placeholder="Referral Code (optional)" readonly>
   <button type="submit"><i class="fa-solid fa-lock"></i> Register Now</button>
   <p id="msg"></p>
 </form>
@@ -140,7 +141,7 @@ button:hover {
 <!-- VIP Welcome -->
 <div id="welcomeBox">
   <div>
-    <h1>Welcome to VIP Club!</h1>
+    <h1>🎉 Welcome to VIP Club!</h1>
     <p>Your account has been successfully created.</p>
     <p>Redirecting to login...</p>
   </div>
@@ -166,10 +167,16 @@ const form = document.getElementById("registerForm");
 const msg = document.getElementById("msg");
 const loader = document.getElementById("loader");
 const welcomeBox = document.getElementById("welcomeBox");
+const referralInput = document.getElementById("referral");
 
-// Capture ref UID from URL
+// Auto fill referral code
 const urlParams = new URLSearchParams(window.location.search);
-const refUid = urlParams.get('ref'); // referrer UID
+const refCode = urlParams.get("ref");
+if (refCode) {
+  referralInput.value = refCode;
+  referralInput.style.background = "#2e3b5b";
+  referralInput.style.color = "#00ff99";
+}
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -182,6 +189,7 @@ form.addEventListener("submit", async (e) => {
   const phone = form.phone.value.trim();
   const password = form.password.value.trim();
   const confirmPassword = form.confirmPassword.value.trim();
+  const referral = form.referral.value.trim();
 
   if (!email.endsWith("@gmail.com")) {
     loader.style.display = "none";
@@ -225,7 +233,6 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  // Save new user
   set(ref(db, "users/" + uid), {
     uid,
     firstName,
@@ -234,20 +241,11 @@ form.addEventListener("submit", async (e) => {
     phone,
     password,
     profilePic,
+    referral,
     verified: false,
     balance: 0
   })
-  .then(async () => {
-    // Save referral if present
-    if (refUid) {
-      const bonus = 10; // Referral bonus
-      await set(ref(db, "referrals/" + uid), {
-        refBy: refUid,
-        refUser: uid,
-        bonus
-      });
-    }
-
+  .then(() => {
     loader.style.display = "none";
     welcomeBox.style.display = "flex";
     setTimeout(() => {
