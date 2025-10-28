@@ -63,7 +63,6 @@ button:hover {
 .error { color: #ff4d4d; }
 .success { color: #00ff99; }
 
-/* Loader */
 .loader {
   display: none;
   position: absolute;
@@ -89,8 +88,6 @@ button:hover {
   color: #fff;
   font-weight: 600;
 }
-
-/* VIP Welcome Popup */
 #welcomeBox {
   display: none;
   position: fixed;
@@ -107,14 +104,8 @@ button:hover {
   text-align: center;
   box-shadow: 0 0 30px #ffcc00;
 }
-#welcomeBox h1 {
-  color: #ffcc00;
-  margin-bottom: 10px;
-}
-#welcomeBox p {
-  color: #ddd;
-  font-size: 18px;
-}
+#welcomeBox h1 { color: #ffcc00; margin-bottom: 10px; }
+#welcomeBox p { color: #ddd; font-size: 18px; }
 </style>
 </head>
 <body>
@@ -127,7 +118,10 @@ button:hover {
   <input type="text" id="phone" placeholder="Phone (11 digit)" required>
   <input type="password" id="password" placeholder="Password (8+ digit)" required>
   <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
-  <input type="text" id="referral" placeholder="Referral Code (optional)" readonly>
+  
+  <!-- Referral Code Field -->
+  <input type="text" id="referral" placeholder="Referral Code (auto)" readonly>
+
   <button type="submit"><i class="fa-solid fa-lock"></i> Register Now</button>
   <p id="msg"></p>
 </form>
@@ -138,7 +132,6 @@ button:hover {
 </div>
 </div>
 
-<!-- VIP Welcome -->
 <div id="welcomeBox">
   <div>
     <h1>🎉 Welcome to VIP Club!</h1>
@@ -149,8 +142,9 @@ button:hover {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { getDatabase, ref, set, get, child, push } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
   authDomain: "eshopingbddd.firebaseapp.com",
@@ -169,15 +163,18 @@ const loader = document.getElementById("loader");
 const welcomeBox = document.getElementById("welcomeBox");
 const referralInput = document.getElementById("referral");
 
-// Auto fill referral code
+// 🔹 Auto fill referral from link
 const urlParams = new URLSearchParams(window.location.search);
 const refCode = urlParams.get("ref");
 if (refCode) {
   referralInput.value = refCode;
   referralInput.style.background = "#2e3b5b";
   referralInput.style.color = "#00ff99";
+} else {
+  referralInput.value = "No Referral";
 }
 
+// 🔹 Registration Logic
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   msg.textContent = "";
@@ -189,7 +186,7 @@ form.addEventListener("submit", async (e) => {
   const phone = form.phone.value.trim();
   const password = form.password.value.trim();
   const confirmPassword = form.confirmPassword.value.trim();
-  const referral = form.referral.value.trim();
+  const referralCode = referralInput.value.trim();
 
   if (!email.endsWith("@gmail.com")) {
     loader.style.display = "none";
@@ -233,7 +230,8 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  set(ref(db, "users/" + uid), {
+  // Save user
+  await set(ref(db, "users/" + uid), {
     uid,
     firstName,
     lastName,
@@ -241,22 +239,26 @@ form.addEventListener("submit", async (e) => {
     phone,
     password,
     profilePic,
-    referral,
     verified: false,
-    balance: 0
-  })
-  .then(() => {
-    loader.style.display = "none";
-    welcomeBox.style.display = "flex";
-    setTimeout(() => {
-      window.location = "login.html";
-    }, 2500);
-  })
-  .catch(err => {
-    loader.style.display = "none";
-    msg.textContent = err.message;
-    msg.className = "error";
+    balance: 0,
+    refBy: referralCode !== "No Referral" ? referralCode : null
   });
+
+  // If referred by someone, save referral info
+  if (referralCode && referralCode !== "No Referral") {
+    const refId = push(ref(db, "referrals")).key;
+    await set(ref(db, "referrals/" + refId), {
+      refBy: referralCode,
+      refUser: uid,
+      bonus: 10
+    });
+  }
+
+  loader.style.display = "none";
+  welcomeBox.style.display = "flex";
+  setTimeout(() => {
+    window.location = "login.html";
+  }, 2500);
 });
 </script>
 </body>
