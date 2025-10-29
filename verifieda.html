@@ -6,22 +6,93 @@
 <title>Admin Panel | Verification Requests</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-body{margin:0;font-family:'Poppins',sans-serif;background:#07102a;color:#fff;padding:20px;}
-h2{text-align:center;color:#f0a500;}
-.card{background:#0f1724;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 0 10px rgba(0,0,0,0.5);}
-button{padding:8px 12px;border:none;border-radius:6px;font-weight:600;cursor:pointer;margin-right:6px;}
-.approve{background:#22c55e;color:#000;}
-.approve:hover{background:#4ade80;}
-.reject{background:#ef4444;color:#fff;}
-.reject:hover{background:#f87171;}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+body{
+  margin:0;
+  font-family:'Poppins',sans-serif;
+  background:#07102a;
+  color:#fff;
+  padding:20px;
+}
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#0f1724;
+  padding:12px 18px;
+  border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.4);
+  margin-bottom:20px;
+}
+header h2{
+  color:#f0a500;
+  font-size:20px;
+  margin:0;
+}
+header a{
+  color:#fff;
+  text-decoration:none;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:linear-gradient(90deg,#f0a500,#ffcc33);
+  padding:8px 14px;
+  border-radius:8px;
+  box-shadow:0 0 10px rgba(255,200,50,0.4);
+  transition:0.3s;
+}
+header a:hover{transform:scale(1.05);color:#000;}
+.count{
+  text-align:center;
+  color:#22c55e;
+  font-size:16px;
+  margin-bottom:15px;
+}
+.card{
+  background:#0f1724;
+  padding:16px;
+  border-radius:12px;
+  box-shadow:0 0 10px rgba(0,0,0,0.5);
+}
 table{width:100%;border-collapse:collapse;}
-th,td{padding:8px;border-bottom:1px solid #333;text-align:left;}
+th,td{padding:10px;border-bottom:1px solid #333;text-align:left;}
 th{color:#f59e0b;}
+button{
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.3s;
+}
+.approve{
+  background:linear-gradient(90deg,#22c55e,#4ade80);
+  color:#000;
+  box-shadow:0 0 8px rgba(34,197,94,0.6);
+}
+.approve:hover{transform:scale(1.05);}
+.reject{
+  background:linear-gradient(90deg,#ef4444,#f87171);
+  color:#fff;
+  box-shadow:0 0 8px rgba(239,68,68,0.6);
+}
+.reject:hover{transform:scale(1.05);}
+.status{
+  font-weight:600;
+}
 </style>
 </head>
 <body>
 
-<h2>Verification Requests</h2>
+<header>
+  <a href="admindashboard .html"><i class="fa-solid fa-arrow-left"></i> Back</a>
+  <h2>Verification Requests</h2>
+  <i class="fa-solid fa-shield-halved" style="color:#f0a500;font-size:22px;"></i>
+</header>
+
+<p class="count">মোট : <span id="totalReq">0</span></p>
+
 <div class="card">
   <table>
     <thead>
@@ -40,7 +111,7 @@ th{color:#f59e0b;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = { 
   apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658", 
@@ -56,6 +127,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const tableBody = document.getElementById("requestTable");
+const totalReq = document.getElementById("totalReq");
 
 // Load all verification requests
 const requestsRef = ref(db, "verificationRequests");
@@ -64,40 +136,49 @@ onValue(requestsRef, snapshot => {
   tableBody.innerHTML = "";
   if(!data){
     tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No requests yet.</td></tr>';
+    totalReq.textContent = 0;
     return;
   }
 
-  Object.keys(data).forEach(uid => {
-    const req = data[uid];
-    const row = document.createElement("tr");
+  const entries = Object.entries(data).sort((a,b)=>{
+    const sa=a[1].status||'', sb=b[1].status||'';
+    if(sa==='pending' && sb!=='pending') return -1;
+    if(sa!=='pending' && sb==='pending') return 1;
+    return 0;
+  });
 
+  totalReq.textContent = entries.length;
+
+  entries.forEach(([uid,req])=>{
+    const row = document.createElement("tr");
+    const color = req.status==='verified'?'#22c55e':req.status==='pending'?'#f59e0b':'#ef4444';
     row.innerHTML = `
       <td>${uid}</td>
-      <td>TXID: ${req.txid}<br>Note: ${req.note || "N/A"}</td>
-      <td><span style="color:${req.status==='verified'?'#22c55e':req.status==='pending'?'#f59e0b':'#ef4444'}">${req.status}</span></td>
+      <td>TXID: ${req.txid || "N/A"}<br>Note: ${req.note || "N/A"}</td>
+      <td class="status" style="color:${color}">${req.status}</td>
       <td>
-        <button class="approve" data-uid="${uid}">Approve</button>
-        <button class="reject" data-uid="${uid}">Reject</button>
+        <button class="approve" data-uid="${uid}"><i class="fa-solid fa-circle-check"></i> Approve</button>
+        <button class="reject" data-uid="${uid}"><i class="fa-solid fa-ban"></i> Reject</button>
       </td>
     `;
     tableBody.appendChild(row);
   });
 
-  // Add click events
-  document.querySelectorAll(".approve").forEach(btn => {
-    btn.addEventListener("click", e => {
-      const uid = e.target.dataset.uid;
-      update(ref(db, "verificationRequests/" + uid), { status: "verified" });
-      update(ref(db, "users/" + uid), { status: "verified", verified: true });
-    });
+  // Button events
+  document.querySelectorAll(".approve").forEach(btn=>{
+    btn.onclick = e=>{
+      const uid = e.target.closest("button").dataset.uid;
+      update(ref(db, "verificationRequests/"+uid), { status:"verified" });
+      update(ref(db, "users/"+uid), { verified:true, status:"verified" });
+    };
   });
 
-  document.querySelectorAll(".reject").forEach(btn => {
-    btn.addEventListener("click", e => {
-      const uid = e.target.dataset.uid;
-      update(ref(db, "verificationRequests/" + uid), { status: "rejected" });
-      update(ref(db, "users/" + uid), { status: "unverified", verified: false });
-    });
+  document.querySelectorAll(".reject").forEach(btn=>{
+    btn.onclick = e=>{
+      const uid = e.target.closest("button").dataset.uid;
+      update(ref(db, "verificationRequests/"+uid), { status:"rejected" });
+      update(ref(db, "users/"+uid), { verified:false, status:"unverified" });
+    };
   });
 });
 </script>

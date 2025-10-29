@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Set Referral Bonus | VIP Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+:root{
+  --bg:#0f1724;--card:#111827;--accent:#f59e0b;--muted:#9ca3af;
+}
+body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#060d1f,#091a3a);color:#fff;margin:0;padding:20px;}
+.container{max-width:500px;margin:40px auto;padding:20px;}
+.card{background:#0f1724;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 0 12px rgba(245,158,11,0.3);}
+.input{width:100%;padding:12px;border-radius:8px;border:none;background:#071226;color:#fff;margin:8px 0;}
+.btn{background:var(--accent);color:#07102a;padding:12px;border-radius:8px;border:none;cursor:pointer;font-weight:600;width:100%;}
+h2{text-align:center;color:var(--accent);margin-bottom:20px;}
+p,small{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Set Referral Bonus (Admin)</h2>
+  
+  <div class="card">
+    <p>Current Bonus per Referral: <span id="bonusPerRef">0</span></p>
+    <input id="newBonus" class="input" type="number" placeholder="Enter new bonus amount" />
+    <button class="btn" id="setBonusBtn"><i class="fas fa-save"></i> Set Bonus</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyApIiGovH14024loNQMVTsm_qE3H2Fa658",
+  authDomain: "eshopingbddd.firebaseapp.com",
+  databaseURL: "https://eshopingbddd-default-rtdb.firebaseio.com",
+  projectId: "eshopingbddd",
+  storageBucket: "eshopingbddd.appspot.com",
+  messagingSenderId: "19777305233",
+  appId: "1:19777305233:web:33f3871db06beeaf129d30"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Load current bonus
+const bonusRef = ref(db, 'settings/refBonus');
+onValue(bonusRef, snap => {
+  document.getElementById('bonusPerRef').textContent = snap.val() || 0;
+});
+
+// Set new bonus
+document.getElementById('setBonusBtn').addEventListener('click', async () => {
+  const newBonus = Number(document.getElementById('newBonus').value);
+  if(isNaN(newBonus) || newBonus <= 0){ alert('Enter a valid bonus'); return; }
+
+  // Admin check (simple)
+  const role = localStorage.getItem('role');
+  if(role !== 'admin'){ alert('Only admin can set bonus'); return; }
+
+  try{
+    await set(ref(db, 'settings/refBonus'), newBonus);
+    alert('Referral bonus updated!');
+    document.getElementById('newBonus').value = '';
+  } catch(e) {
+    console.error(e);
+    alert('Error updating bonus');
+  }
+});
+</script>
+</body>
+</html>
