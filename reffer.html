@@ -10,7 +10,11 @@
 :root{
   --bg:#0f1724;--card:#111827;--accent:#f59e0b;--muted:#9ca3af;
 }
-body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#060d1f,#091a3a);color:#fff;margin:0;padding-bottom:100px;}
+body{
+  font-family:'Poppins',sans-serif;
+  background:linear-gradient(135deg,#060d1f,#091a3a);
+  color:#fff;margin:0;padding-bottom:100px;
+}
 .container{max-width:900px;margin:20px auto;padding:18px;}
 .card{background:#0f1724;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 0 12px rgba(245,158,11,0.3);}
 .input{width:100%;padding:10px;border-radius:8px;border:none;background:#071226;color:#fff;margin:8px 0;}
@@ -20,11 +24,21 @@ p,small{color:var(--muted);}
 a{text-decoration:none;color:var(--accent);}
 .verified{color:#10b981;font-weight:600;}
 .unverified{color:#ef4444;font-weight:600;}
+.vip{color:#f59e0b;font-weight:600;}
 .ref-list{margin-top:10px;}
-.ref-item{border-bottom:1px solid rgba(255,255,255,0.1);padding:8px 0;display:flex;justify-content:space-between;align-items:center;}
+.ref-item{
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  padding:8px 0;display:flex;justify-content:space-between;
+  align-items:center;flex-wrap:wrap;
+}
 .ref-item:last-child{border:none;}
 .ref-item span{font-weight:600;}
-/* Bottom Navigation */
+.back-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  color:var(--accent);text-decoration:none;font-weight:600;
+  margin-bottom:10px;
+}
+.back-btn i{font-size:18px;}
 .bottom-nav{
   position:fixed;bottom:0;left:0;width:100%;
   background:#111827;display:flex;justify-content:space-around;
@@ -42,19 +56,20 @@ a{text-decoration:none;color:var(--accent);}
 </head>
 <body>
 <div class="container">
-  <h2>🎁 রেফার সিস্টেম</h2>
+  <a href="dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a>
+  <h2> </h2>
 
   <div class="card">
-    <h4>তোমার রেফারেল লিংক</h4>
+    <h4>  </h4>
     <input id="refLink" class="input" readonly />
-    <button class="link-btn" id="copyBtn"><i class="fa-solid fa-copy"></i> কপি লিংক</button>
-    <p>প্রতি Verified রেফারে বোনাস: <span id="bonusPerRef">0</span> টাকা</p>
+    <button class="link-btn" id="copyBtn"><i class="fa-solid fa-copy"></i>  </button>
+    <p>Verified   : <span id="bonusPerRef">0</span> </p>
   </div>
 
   <div class="card">
-    <h4>তোমার রেফার হিস্টরি</h4>
-    <p>মোট রেফার: <span id="refCount">0</span></p>
-    <p>মোট আয়: <span id="refBonus">0</span> টাকা</p>
+    <h4>  </h4>
+    <p> Verified : <span id="refCount">0</span></p>
+    <p>  : <span id="refBonus">0</span> </p>
 
     <div class="ref-list" id="refList">
       <small>Loading...</small>
@@ -62,7 +77,6 @@ a{text-decoration:none;color:var(--accent);}
   </div>
 </div>
 
-<!-- 🔥 Bottom Navigation -->
 <div class="bottom-nav">
   <a href="dashboard.html"><i class="fas fa-home"></i>Home</a>
   <a href="task.html"><i class="fas fa-tasks"></i>Tasks</a>
@@ -72,7 +86,7 @@ a{text-decoration:none;color:var(--accent);}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { getDatabase, ref, onValue, get, child } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { getDatabase, ref, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -95,13 +109,15 @@ document.getElementById('refLink').value = siteBase + uid;
 // copy link
 document.getElementById('copyBtn').addEventListener('click', ()=>{
   navigator.clipboard.writeText(document.getElementById('refLink').value);
-  alert('রেফার লিংক কপি হয়েছে ✅');
+  alert('    ');
 });
 
 // Load referral bonus
+let refBonusAmount = 0;
 const bonusRef = ref(db, 'settings/refBonus');
 onValue(bonusRef, snap=>{
-  document.getElementById('bonusPerRef').textContent = snap.val() || 0;
+  refBonusAmount = snap.val() || 0;
+  document.getElementById('bonusPerRef').textContent = refBonusAmount;
 });
 
 // Load referrals
@@ -111,27 +127,52 @@ onValue(refsRef, async snap=>{
   let count = 0, bonusTotal = 0;
   const listEl = document.getElementById('refList');
   listEl.innerHTML = '';
+
   for(const k of Object.keys(data).reverse()){
     const r = data[k];
     if(r.refBy !== uid) continue;
 
-    // check if referred user is verified
-    const userSnap = await get(child(ref(db), `users/${r.refUser}`));
-    const verified = userSnap.exists() ? userSnap.val().verified : false;
+    const refUserPath = `users/${r.refUser}`;
+    const userSnap = await get(child(ref(db), refUserPath));
+    if(!userSnap.exists()) continue;
+    const userData = userSnap.val();
+    const verified = userData.verified || false;
+    const vip = userData.vip || false;
+    const name = userData.name || r.refUser;
 
     const div = document.createElement('div');
     div.className = 'ref-item';
     div.innerHTML = `
-      <span>${r.refUser}</span>
-      <span class="${verified?'verified':'unverified'}">${verified?'Verified':'Unverified'}</span>
+      <div>
+        <span>${name}</span> 
+        ${vip ? '<span class="vip">[VIP]</span>' : ''}
+      </div>
+      <span class="${verified?'verified':'unverified'}">
+        ${verified?' Verified':' Unverified'}
+      </span>
     `;
     listEl.appendChild(div);
 
-    if(verified){
+    //     
+    if(verified && !r.refBonusGiven){
       count++;
-      bonusTotal += Number(r.bonus || 0);
+      bonusTotal += refBonusAmount;
+
+      const userRef = ref(db, `users/${uid}`);
+      const userDataSnap = await get(userRef);
+      if(userDataSnap.exists()){
+        const currentBal = Number(userDataSnap.val().balance || 0);
+        await update(userRef, { balance: currentBal + refBonusAmount });
+      }
+
+      //  data       
+      await update(ref(db, `referrals/${k}`), { refBonusGiven: true, bonus: refBonusAmount });
+    } else if(verified && r.refBonusGiven){
+      count++;
+      bonusTotal += refBonusAmount;
     }
   }
+
   document.getElementById('refCount').textContent = count;
   document.getElementById('refBonus').textContent = bonusTotal;
 });
