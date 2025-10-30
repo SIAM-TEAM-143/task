@@ -57,19 +57,19 @@ a{text-decoration:none;color:var(--accent);}
 <body>
 <div class="container">
   <a href="dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a>
-  <h2> </h2>
+  <h2>রেফারেল সেন্টার</h2>
 
   <div class="card">
-    <h4>  </h4>
+    <h4>তোমার রেফারেল লিংক</h4>
     <input id="refLink" class="input" readonly />
-    <button class="link-btn" id="copyBtn"><i class="fa-solid fa-copy"></i>  </button>
-    <p>Verified   : <span id="bonusPerRef">0</span> </p>
+    <button class="link-btn" id="copyBtn"><i class="fa-solid fa-copy"></i> কপি লিংক</button>
+    <p>Verified ইউজার প্রতি বোনাস: <span id="bonusPerRef">0</span> ৳</p>
   </div>
 
   <div class="card">
-    <h4>  </h4>
-    <p> Verified : <span id="refCount">0</span></p>
-    <p>  : <span id="refBonus">0</span> </p>
+    <h4>তোমার রেফারেল রিপোর্ট</h4>
+    <p>মোট Verified রেফার: <span id="refCount">0</span></p>
+    <p>মোট অর্জিত বোনাস: <span id="refBonus">0</span> ৳</p>
 
     <div class="ref-list" id="refList">
       <small>Loading...</small>
@@ -109,7 +109,7 @@ document.getElementById('refLink').value = siteBase + uid;
 // copy link
 document.getElementById('copyBtn').addEventListener('click', ()=>{
   navigator.clipboard.writeText(document.getElementById('refLink').value);
-  alert('    ');
+  alert('রেফারেল লিংক কপি হয়েছে ✅');
 });
 
 // Load referral bonus
@@ -148,12 +148,12 @@ onValue(refsRef, async snap=>{
         ${vip ? '<span class="vip">[VIP]</span>' : ''}
       </div>
       <span class="${verified?'verified':'unverified'}">
-        ${verified?' Verified':' Unverified'}
+        ${verified?'✅ Verified':'❌ Unverified'}
       </span>
     `;
     listEl.appendChild(div);
 
-    //     
+    // শুধুমাত্র একবারই বোনাস যোগ কর
     if(verified && !r.refBonusGiven){
       count++;
       bonusTotal += refBonusAmount;
@@ -165,7 +165,7 @@ onValue(refsRef, async snap=>{
         await update(userRef, { balance: currentBal + refBonusAmount });
       }
 
-      //  data       
+      // রেফার data আপডেট করে রাখি যাতে আবার না দেয়
       await update(ref(db, `referrals/${k}`), { refBonusGiven: true, bonus: refBonusAmount });
     } else if(verified && r.refBonusGiven){
       count++;
